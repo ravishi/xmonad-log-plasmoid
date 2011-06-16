@@ -1,0 +1,17 @@
+[Desktop Entry]
+Encoding=UTF-8
+Name=XMonad log plasmoid
+Type=Service
+ServiceTypes=Plasma/Applet
+Icon=chronometer
+X-Plasma-API=python
+X-Plasma-MainScript=code/main.py
+X-KDE-PluginInfo-Author=Igor Almeida
+X-KDE-PluginInfo-Email=igorcontato@gmail.com
+X-KDE-PluginInfo-Name=xmonad-log-plasmoid
+X-KDE-PluginInfo-Version=1.0
+X-KDE-PluginInfo-Website=http://plasma.kde.org/
+X-KDE-PluginInfo-Category=System Information
+X-KDE-PluginInfo-Depends=
+X-KDE-PluginInfo-License=GPL
+X-KDE-PluginInfo-EnabledByDefault=true
