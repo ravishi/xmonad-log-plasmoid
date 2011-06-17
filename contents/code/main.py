@@ -12,29 +12,49 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from PyQt4.QtCore import Qt
+from PyQt4 import QtCore
+from PyQt4.QtCore import Qt, QFileSystemWatcher
 from PyQt4.QtGui import QGraphicsLinearLayout
 from PyKDE4.plasma import Plasma
 from PyKDE4 import plasmascript
 
+import os
+import threading
+
+fifo_file = ["/home/igor/.cache/xmonad-log-plasmoid/pipe",]
+label = None
+f_obj = None #File object to read from fifo_file
+
 class XMonadLogPlasmoid(plasmascript.Applet):
+
 	def __init__(self, parent, args=None):
 		plasmascript.Applet.__init__(self, parent)
 
 	def init(self):
-		self.setHasConfigurationInterface(False)
-		self.setAspectRatioMode(Plasma.Square)
+		global label, f_obj
 
-		self.theme = Plasma.Svg(self)
-		self.theme.setImagePath("widgets/background")
-		self.setBackgroundHints(Plasma.Applet.DefaultBackground)
+		self.setHasConfigurationInterface(False)
+#		self.setAspectRatioMode(Plasma.Square)
+#
+#		self.theme = Plasma.Svg(self)
+#		self.theme.setImagePath("widgets/background")
+#		self.setBackgroundHints(Plasma.Applet.DefaultBackground)
 
 		self.layout = QGraphicsLinearLayout(Qt.Horizontal, self.applet)
 		label = Plasma.Label(self.applet)
 		label.setText("Hello world!")
 		self.layout.addItem(label)
 		self.applet.setLayout(self.layout)
-		self.resize(125,125)
+		#self.resize(500,125)
+
+		watcher = QFileSystemWatcher(fifo_file, self.applet)
+		f_obj = open(fifo_file[0], 'r', 1)
+
+		QtCore.QObject.connect(watcher, QtCore.SIGNAL("fileChanged(QString)"),
+			update_label)
+
+def update_label(s):
+	label.setText(f_obj.readline())
 
 def CreateApplet(parent):
 	return XMonadLogPlasmoid(parent)
