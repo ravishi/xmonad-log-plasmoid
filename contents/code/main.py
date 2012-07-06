@@ -76,7 +76,8 @@ class XMonadLogPlasmoid(plasmascript.Applet):
             dbus_interface='org.xmonad.Log')
 
     def _bus_owner_changed(self, name):
-        self._connect_to_signal(name)
+        if name:
+            self._connect_to_signal(name)
 
     def msg_receive(self, msg):
         self.label.setText(msg)
