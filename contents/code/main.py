@@ -11,6 +11,7 @@
 #
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+import sys
 
 from PyQt4 import QtCore
 from PyQt4.QtCore import Qt
@@ -36,10 +37,16 @@ class XMonadLogPlasmoid(plasmascript.Applet):
     def init(self):
         self.setHasConfigurationInterface(False)
 
+        self.applet.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding))
+        self.applet.setMaximumSize(sys.maxint, sys.maxint)
+
         self.layout = QGraphicsLinearLayout(Qt.Horizontal, self.applet)
-        #self.layout.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding))
+        self.layout.setContentsMargins(0, 0, 0, 0)
+        self.layout.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding))
+        self.layout.setMaximumSize(sys.maxint, sys.maxint)
 
         self.label = Plasma.Label(self.applet)
+
         self.layout.addItem(self.label)
         self.applet.setLayout(self.layout)
 
@@ -69,10 +76,7 @@ class XMonadLogPlasmoid(plasmascript.Applet):
             dbus_interface='org.xmonad.Log')
 
     def _bus_owner_changed(self, name):
-        if name:
-            self._connect_to_signal(name)
-        else:
-            print 'Waiting for dbus...'
+        self._connect_to_signal(name)
 
     def msg_receive(self, msg):
         self.label.setText(msg)
