@@ -14,63 +14,70 @@
 
 from PyQt4 import QtCore
 from PyQt4.QtCore import Qt
-from PyQt4.QtGui import QGraphicsLinearLayout
+from PyQt4.QtGui import QGraphicsLinearLayout, QSizePolicy
 from PyKDE4.plasma import Plasma
 from PyKDE4 import plasmascript
 
-import os
-import threading
 import dbus
 from dbus.mainloop.qt import DBusQtMainLoop
 
 label = None #TODO not sure if I really need it global
 
 class XMonadLogPlasmoid(plasmascript.Applet):
+    label_signal = QtCore.pyqtSignal(str)
+    session_bus = None
+    _name_watcher = None
 
-	label_signal = QtCore.pyqtSignal(str)
-	session_bus = None
+    BUSNAME = 'org.xmonad.Log'
 
-	def __init__(self, parent, args=None):
-		plasmascript.Applet.__init__(self, parent)
+    def __init__(self, parent, args=None):
+        plasmascript.Applet.__init__(self, parent)
 
-	def init(self):
-		global label
+    def init(self):
+        self.setHasConfigurationInterface(False)
 
-		self.setHasConfigurationInterface(False)
-#		self.setAspectRatioMode(Plasma.Square)
-#
-#		self.theme = Plasma.Svg(self)
-#		self.theme.setImagePath("widgets/background")
-#		self.setBackgroundHints(Plasma.Applet.DefaultBackground)
+        self.layout = QGraphicsLinearLayout(Qt.Horizontal, self.applet)
+        #self.layout.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding))
 
-		self.layout = QGraphicsLinearLayout(Qt.Horizontal, self.applet)
-		label = Plasma.Label(self.applet)
-		label.setText("Waiting for XMonad...")
-		self.layout.addItem(label)
-		self.applet.setLayout(self.layout)
-		#self.resize(500,125)
+        self.label = Plasma.Label(self.applet)
+        self.layout.addItem(self.label)
+        self.applet.setLayout(self.layout)
 
-		self.setup_dbus()
-		self.label_signal.connect(update_label)
+        self._setup_dbus()
 
-	def setup_dbus(self):
-		self.session_bus = dbus.SessionBus()
-		proxy = self.session_bus.get_object(
-			bus_name='org.xmonad.Log',
-			object_path='/org/xmonad/Log')
+    def _setup_dbus(self):
+        if self.session_bus is None:
+            self.session_bus = dbus.SessionBus()
 
-		self.session_bus.add_signal_receiver(
-			handler_function=self.msg_receive,
-			signal_name='Update',
-			dbus_interface='org.xmonad.Log')
+        if not self.session_bus.name_has_owner('org.xmonad.Log'):
+            self.label.setText("Waiting for XMonad...")
+            self._name_watcher = self.session_bus.watch_name_owner(self.BUSNAME, self._bus_owner_changed)
+        else:
+            self._connect_to_signal()
 
-	def msg_receive(self, msg):
-		self.label_signal.emit(msg)
+    def _connect_to_signal(self, name=None):
+        name = name or self.BUSNAME
 
-def update_label(s):
-	label.setText(s)
+        self._bus_proxy = self.session_bus.get_object(
+            bus_name=name,
+            object_path='/org/xmonad/Log',
+            introspect=False)
+
+        self._bus_proxy.connect_to_signal(
+            handler_function=self.msg_receive,
+            signal_name='Update',
+            dbus_interface='org.xmonad.Log')
+
+    def _bus_owner_changed(self, name):
+        if name:
+            self._connect_to_signal(name)
+        else:
+            print 'Waiting for dbus...'
+
+    def msg_receive(self, msg):
+        self.label.setText(msg)
 
 def CreateApplet(parent):
-	DBusQtMainLoop(set_as_default=True)
-	return XMonadLogPlasmoid(parent)
+    DBusQtMainLoop(set_as_default=True)
+    return XMonadLogPlasmoid(parent)
 
